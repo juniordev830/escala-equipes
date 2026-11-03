@@ -14,7 +14,7 @@ Python 3.11+ e pytest.
 
 - [ ] Cadastrar equipes e disponibilidade
 - [ ] Montar escalas
-- [ ] Identificar horários conflitantes
+- [x] Identificar horários conflitantes
 
 ## Critérios para concluir a primeira versão
 
