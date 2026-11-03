@@ -1,43 +1,39 @@
-# Escala Equipes
+# Escala de Equipes
 
-Escalas de trabalho baseadas em disponibilidade e conflitos.
+Biblioteca Python 3.10+ que verifica conflitos de turnos e apresenta carga horária programada por pessoa.
 
-## Estado atual
+## Funcionalidades
 
-MVP executável em branch de desenvolvimento, com testes automatizados. Turnos em memória e detecção de conflitos entre pessoas. Ainda não há interface ou persistência.
+- `detectar_conflitos(turnos)`: encontra pares sobrepostos da **mesma pessoa**, comparando nomes sem diferenciar maiúsculas/minúsculas e ignorando espaços externos.
+- `resumir_carga_horaria(turnos)`: soma durações em `datetime.timedelta`, conta os turnos por pessoa e retorna resultados ordenados por nome.
+- Rejeita escalas com turnos sobrepostos da mesma pessoa para **não duplicar horas**. Aceita turnos adjacentes e turnos que cruzam a meia-noite.
 
-## Tecnologias implementadas
+## Exemplo
 
-Python 3.11+ e pytest.
+```python
+from datetime import datetime, timedelta
+from escala_equipes import Turno, resumir_carga_horaria
 
-## Escopo da primeira versão
+inicio = datetime(2026, 11, 3, 20)
+turnos = [
+    Turno("Ana", inicio, inicio + timedelta(hours=4)),
+    Turno(" ana ", inicio + timedelta(hours=4), inicio + timedelta(hours=8)),
+]
+print(resumir_carga_horaria(turnos))
+# [ResumoCarga(pessoa='Ana', turnos=2, duracao=datetime.timedelta(seconds=28800))]
+```
 
-- [ ] Cadastrar equipes e disponibilidade
-- [ ] Montar escalas
-- [x] Identificar horários conflitantes
-
-## Critérios para concluir a primeira versão
-
-- [ ] Implementar o fluxo principal com validação de entradas e tratamento de erros.
-- [ ] Documentar instalação, configuração e execução com comandos reproduzíveis.
-- [ ] Adicionar exemplos de uso e dados fictícios.
-- [ ] Verificar os casos principais e limites e registrar os resultados.
-
-## Desenvolvimento
-
-Execute na raiz do repositório:
+## Testes
 
 ```bash
-python -m pip install pytest
+python -m pip install -e . pytest
 pytest -q
 ```
 
-O GitHub Actions executa a validação em pushes e pull requests. Este é um núcleo demonstrativo; as funcionalidades ainda marcadas como pendentes na lista acima continuam planejadas.
+O GitHub Actions valida turnos simultâneos, adjacência, turnos noturnos, normalização de nomes, resumos e erros de conflito.
 
-## Privacidade e configuração
+## Limitações
 
-Usar dados fictícios nos exemplos e manter senhas, tokens, arquivos pessoais e credenciais fora do controle de versão.
+MVP de domínio em memória, sem banco, folha de pagamento, validação de jornada legal, fusos mistos, descanso obrigatório, banco de horas ou interface. A duração representa horas **programadas**, não horas trabalhadas ou remuneradas; para escalas com mudança de horário de verão é necessário definir tratamento explícito de fuso horário. Exemplos fictícios.
 
-## Licença
-
-Ainda não definida.
+Licença: ainda não definida.
