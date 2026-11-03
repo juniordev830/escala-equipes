@@ -1,2 +1,2 @@
-from .core import Turno, detectar_conflitos
-__all__ = ["Turno", "detectar_conflitos"]
+from .core import Turno, ResumoCarga, detectar_conflitos, resumir_carga_horaria
+__all__ = ["Turno", "ResumoCarga", "detectar_conflitos", "resumir_carga_horaria"]
