@@ -1,42 +1,67 @@
 # Escala Equipes
 
-Escalas de trabalho baseadas em disponibilidade e conflitos.
+Planejador de turnos em **Python 3.10+**, com disponibilidade, competências, distribuição de vagas e controle de horas. A API original `Turno` e `detectar_conflitos` permanece intacta.
 
-## Estado atual
+## Funcionalidades adicionadas
 
-MVP executável em branch de desenvolvimento, com testes automatizados. Turnos em memória e detecção de conflitos entre pessoas. Ainda não há interface ou persistência.
+- Cadastro de colaboradores com habilidades e limites diário/semanal de horas.
+- Disponibilidade por pessoa com validação de horários e prevenção de sobreposição.
+- Demandas por intervalo, quantidade de vagas e habilidade necessária.
+- Distribuição determinística para as pessoas com menos horas alocadas na semana.
+- Nenhuma alocação parcial: se faltarem candidatos, a demanda inteira é recusada.
+- Bloqueio de turnos sobrepostos e respeito aos limites de horas.
+- Cancelamento de todas as vagas de uma demanda, resumo diário e detecção de conflitos.
+- Arquivo JSON local versionado com gravação atômica e validação na restauração.
+- Ferramenta de terminal para cadastro, atribuição, listagem e relatórios.
+- Testes do domínio, armazenamento e comandos reais.
 
-## Tecnologias implementadas
+**Limites do protótipo:** até 500 pessoas e 10.000 disponibilidades. Os horários do planejador são locais, sem fuso e sem turnos que atravessem meia-noite. Não calcula horas extras, folha de pagamento ou normas trabalhistas.
 
-Python 3.11+ e pytest.
-
-## Escopo da primeira versão
-
-- [ ] Cadastrar equipes e disponibilidade
-- [ ] Montar escalas
-- [x] Identificar horários conflitantes
-
-## Critérios para concluir a primeira versão
-
-- [ ] Implementar o fluxo principal com validação de entradas e tratamento de erros.
-- [ ] Documentar instalação, configuração e execução com comandos reproduzíveis.
-- [ ] Adicionar exemplos de uso e dados fictícios.
-- [ ] Verificar os casos principais e limites e registrar os resultados.
-
-## Desenvolvimento
-
-Execute na raiz do repositório:
+## Instalar e testar
 
 ```bash
-python -m pip install pytest
+python -m pip install -e . pytest
 pytest -q
 ```
 
-O GitHub Actions executa a validação em pushes e pull requests. Este é um núcleo demonstrativo; as funcionalidades ainda marcadas como pendentes na lista acima continuam planejadas.
+## Exemplo no terminal
 
-## Privacidade e configuração
+Os nomes abaixo são fictícios:
 
-Usar dados fictícios nos exemplos e manter senhas, tokens, arquivos pessoais e credenciais fora do controle de versão.
+```bash
+python -m escala_equipes.cli add-member Ana --skills qa,python
+python -m escala_equipes.cli add-member Bruno --skills qa
+python -m escala_equipes.cli available Ana 2026-11-09T08:00 2026-11-09T16:00
+python -m escala_equipes.cli available Bruno 2026-11-09T08:00 2026-11-09T16:00
+python -m escala_equipes.cli assign suporte-01 2026-11-09T09:00 2026-11-09T11:00 --slots 2 --skill qa
+python -m escala_equipes.cli list
+python -m escala_equipes.cli summary 2026-11-09
+python -m escala_equipes.cli cancel suporte-01
+```
+
+Para escolher outro local de armazenamento, acrescente `--file caminho.json` **antes** do comando. Sem a opção, os dados ficam em `~/.gx-escala/escala.json`, configurável também com a variável `GX_ESCALA_FILE`.
+
+## API Python
+
+```python
+from datetime import datetime
+from escala_equipes.planning import Membro, Disponibilidade, Demanda, Escalador
+
+escala = Escalador()
+escala.adicionar_membro(Membro("Ana", habilidades=("qa",)))
+escala.informar_disponibilidade(Disponibilidade(
+    "Ana", datetime(2026, 11, 9, 8), datetime(2026, 11, 9, 16)
+))
+atribuicoes = escala.alocar(Demanda(
+    "teste-001", datetime(2026, 11, 9, 9),
+    datetime(2026, 11, 9, 11), habilidade="qa"
+))
+print(atribuicoes)
+```
+
+## Segurança e privacidade
+
+Este é um protótipo local de demonstração. O JSON não é criptografado, não há autenticação, autorização, banco multiusuário ou mecanismos para sincronização simultânea. Não armazene dados pessoais de colaboradores em repositórios públicos.
 
 ## Licença
 
