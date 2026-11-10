@@ -89,3 +89,18 @@ def test_rejects_file_over_one_megabyte(tmp_path):
     filename.write_bytes(b"x" * 1_000_001)
     with pytest.raises(ValueError, match="1 MB"):
         load_schedule(filename)
+
+
+def test_rejects_allocations_with_same_code_and_different_intervals(tmp_path):
+    filename = tmp_path / "schedule.json"
+    save_schedule(make_schedule(), filename)
+    data = json.loads(filename.read_text(encoding="utf-8"))
+    data["allocations"].append({
+        "code": "CHAMADO-1", "name": "Bruno",
+        "start": "2026-11-09T10:00:00", "end": "2026-11-09T11:00:00",
+    })
+    original = json.dumps(data).encode("utf-8")
+    filename.write_bytes(original)
+    with pytest.raises(ValueError, match="inválidos"):
+        load_schedule(filename)
+    assert filename.read_bytes() == original

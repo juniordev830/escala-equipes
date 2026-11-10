@@ -206,6 +206,10 @@ class Escalador:
                a.pessoa.casefold() == alocacao.pessoa.casefold()
                for a in self._alocacoes):
             raise ValueError("alocação duplicada")
+        if any(a.codigo.casefold() == alocacao.codigo.casefold() and
+               (a.inicio != alocacao.inicio or a.fim != alocacao.fim)
+               for a in self._alocacoes):
+            raise ValueError("alocações da mesma demanda devem ter horários iguais")
         demanda = Demanda(alocacao.codigo, alocacao.inicio, alocacao.fim)
         if not self._pode_alocar(membro, demanda):
             raise ValueError("alocação salva viola horários ou limites")
