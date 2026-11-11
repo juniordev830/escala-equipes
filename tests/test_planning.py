@@ -171,3 +171,18 @@ def test_member_agenda_is_sorted_filtered_immutable_and_tracks_cancellation():
     planner.cancelar("early")
     assert [entry.codigo for entry in planner.agenda_membro("ana")] == ["later"]
     assert len(schedule) == 2  # snapshot anterior não muda
+
+
+def test_date_only_queries_reject_datetime_instead_of_silently_misreporting():
+    planner = planner_with_staff()
+    planner.alocar(Demanda("shift", when(0), when(2), habilidade="python"))
+
+    # datetime inherits from date; accepting it previously returned an empty
+    # member agenda and an incorrect daily summary for an existing shift.
+    with pytest.raises(ValueError, match="dia inválido"):
+        planner.agenda_membro("Ana", BASE)
+    with pytest.raises(ValueError, match="dia inválido"):
+        planner.resumo(BASE)
+
+    assert len(planner.agenda_membro("Ana", BASE.date())) == 1
+    assert planner.resumo(BASE.date())["turnos"] == 1
