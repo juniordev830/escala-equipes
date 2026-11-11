@@ -151,3 +151,23 @@ def test_available_slots_are_returned_as_immutable_views():
     assert isinstance(planner.disponibilidades, tuple)
     with pytest.raises(AttributeError):
         planner.alocacoes.append("invalid")
+
+
+def test_member_agenda_is_sorted_filtered_immutable_and_tracks_cancellation():
+    planner = planner_with_staff()
+    planner.alocar(Demanda("later", when(2), when(4), habilidade="python"))
+    planner.alocar(Demanda("early", when(0), when(2), habilidade="python"))
+    schedule = planner.agenda_membro("ANA")
+    assert [entry.codigo for entry in schedule] == ["early", "later"]
+    assert len(planner.agenda_membro("Ana", (BASE + timedelta(days=1)).date())) == 0
+    assert isinstance(schedule, tuple)
+    assert planner.agenda_membro("Bruno") == ()
+    with pytest.raises(AttributeError):
+        schedule.append("wrong")
+    with pytest.raises(KeyError):
+        planner.agenda_membro("inexistente")
+    with pytest.raises(ValueError):
+        planner.agenda_membro("Ana", "2026-11-09")
+    planner.cancelar("early")
+    assert [entry.codigo for entry in planner.agenda_membro("ana")] == ["later"]
+    assert len(schedule) == 2  # snapshot anterior não muda
