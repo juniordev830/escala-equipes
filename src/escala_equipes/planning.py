@@ -227,6 +227,20 @@ class Escalador:
         ]
         return removidas
 
+    def agenda_membro(self, nome: str, dia: date | None = None) -> tuple[Alocacao, ...]:
+        """Consulta a agenda de uma pessoa sem expor ou alterar o estado interno."""
+        chave = _name(nome, "nome").casefold()
+        if chave not in self._membros:
+            raise KeyError("pessoa não cadastrada")
+        if dia is not None and not isinstance(dia, date):
+            raise ValueError("dia inválido")
+        return tuple(sorted(
+            (a for a in self._alocacoes
+             if a.pessoa.casefold() == chave
+             and (dia is None or a.inicio.date() == dia)),
+            key=lambda a: (a.inicio, a.codigo.casefold()),
+        ))
+
     def conflitos(self) -> list[tuple[Turno, Turno]]:
         turnos = [
             Turno(item.pessoa, item.inicio, item.fim)
