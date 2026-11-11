@@ -53,7 +53,10 @@ def parser() -> argparse.ArgumentParser:
 
     member_schedule = actions.add_parser("member", help="consultar escala de um colaborador")
     member_schedule.add_argument("name")
-    member_schedule.add_argument("--day", default=None, help="filtrar por dia AAAA-MM-DD")
+    period = member_schedule.add_mutually_exclusive_group()
+    period.add_argument("--day", default=None, help="filtrar por dia AAAA-MM-DD")
+    period.add_argument("--week", default=None,
+                        help="filtrar pela semana ISO (segunda a domingo) que contém AAAA-MM-DD")
 
     summary = actions.add_parser("summary", help="resumo de turnos do dia")
     summary.add_argument("day", help="AAAA-MM-DD")
@@ -109,7 +112,8 @@ def run(argv: list[str] | None = None) -> int:
                 )
         elif args.command == "member":
             selected_day = date.fromisoformat(args.day) if args.day else None
-            allocations = planner.agenda_membro(args.name, selected_day)
+            selected_week = date.fromisoformat(args.week) if args.week else None
+            allocations = planner.agenda_membro(args.name, selected_day, selected_week)
             hours = sum((a.fim - a.inicio).total_seconds() / 3600 for a in allocations)
             print(f"Alocações: {len(allocations)} | horas: {hours:.2f}")
             for item in allocations:

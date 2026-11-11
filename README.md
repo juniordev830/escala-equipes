@@ -37,6 +37,7 @@ python -m escala_equipes.cli assign suporte-01 2026-11-09T09:00 2026-11-09T11:00
 python -m escala_equipes.cli list
 python -m escala_equipes.cli summary 2026-11-09
 python -m escala_equipes.cli member Ana --day 2026-11-09
+python -m escala_equipes.cli member Ana --week 2026-11-11
 python -m escala_equipes.cli member Ana
 python -m escala_equipes.cli cancel suporte-01
 ```
@@ -61,7 +62,7 @@ atribuicoes = escala.alocar(Demanda(
 print(atribuicoes)
 ```
 
-O comando `member NOME [--day AAAA-MM-DD]` consulta somente as alocações daquele colaborador, ordenadas cronologicamente, com quantidade de turnos e horas. Nomes são comparados sem distinção de maiúsculas/minúsculas, e a consulta não altera o JSON local.
+O comando `member NOME [--day AAAA-MM-DD | --week AAAA-MM-DD]` consulta somente as alocações daquele colaborador, ordenadas cronologicamente, com quantidade de turnos e horas. `--week` seleciona a semana ISO (segunda a domingo) que contém a data, inclusive nas viradas de ano; não pode ser combinado com `--day`. Nomes são comparados sem distinção de maiúsculas/minúsculas, e a consulta não altera o JSON local.
 
 ## Segurança e privacidade
 

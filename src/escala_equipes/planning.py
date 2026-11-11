@@ -227,17 +227,31 @@ class Escalador:
         ]
         return removidas
 
-    def agenda_membro(self, nome: str, dia: date | None = None) -> tuple[Alocacao, ...]:
-        """Consulta a agenda de uma pessoa sem expor ou alterar o estado interno."""
+    def agenda_membro(
+        self, nome: str, dia: date | None = None, semana: date | None = None,
+    ) -> tuple[Alocacao, ...]:
+        """Snapshot da agenda, opcionalmente filtrado por dia ou semana ISO."""
         chave = _name(nome, "nome").casefold()
         if chave not in self._membros:
             raise KeyError("pessoa não cadastrada")
         if dia is not None and (not isinstance(dia, date) or isinstance(dia, datetime)):
             raise ValueError("dia inválido")
+        if semana is not None and (not isinstance(semana, date) or isinstance(semana, datetime)):
+            raise ValueError("semana inválida")
+        if dia is not None and semana is not None:
+            raise ValueError("informe dia ou semana, não ambos")
+        # ISO: segunda a domingo; ano da semana pode diferir do ano civil.
+        semana_iso = semana.isocalendar()[:2] if semana is not None else None
         return tuple(sorted(
-            (a for a in self._alocacoes
-             if a.pessoa.casefold() == chave
-             and (dia is None or a.inicio.date() == dia)),
+            (
+                a for a in self._alocacoes
+                if a.pessoa.casefold() == chave
+                and (dia is None or a.inicio.date() == dia)
+                and (
+                    semana_iso is None
+                    or a.inicio.date().isocalendar()[:2] == semana_iso
+                )
+            ),
             key=lambda a: (a.inicio, a.codigo.casefold()),
         ))
 

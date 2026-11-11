@@ -105,3 +105,33 @@ def test_cli_member_schedule_by_day_is_read_only(tmp_path):
     assert cli(storage, "member", "Desconhecido").returncode == 2
     assert cli(storage, "member", "Ana", "--day", "2026-02-30").returncode == 2
     assert storage.read_bytes() == previous
+
+
+def test_cli_member_week_filter_and_mutually_exclusive_options(tmp_path):
+    storage = tmp_path / "week.json"
+    assert cli(storage, "add-member", "Ana").returncode == 0
+    for code, day in (
+        ("monday", "2026-12-28"),
+        ("sunday", "2027-01-03"),
+        ("next-monday", "2027-01-04"),
+    ):
+        assert cli(storage, "available", "Ana",
+                   f"{day}T08:00", f"{day}T10:00").returncode == 0
+        assert cli(storage, "assign", code,
+                   f"{day}T08:30", f"{day}T09:30").returncode == 0
+    before = storage.read_bytes()
+    current = cli(storage, "member", "ANA", "--week", "2027-01-01")
+    assert current.returncode == 0, current.stderr
+    assert "Alocações: 2 | horas: 2.00" in current.stdout
+    assert "monday" in current.stdout and "sunday" in current.stdout
+    assert "next-monday" not in current.stdout
+    following = cli(storage, "member", "Ana", "--week", "2027-01-04")
+    assert following.returncode == 0
+    assert "Alocações: 1 | horas: 1.00" in following.stdout
+    assert "next-monday" in following.stdout
+    assert cli(storage, "member", "Ana", "--week", "2027-02-30").returncode == 2
+    both = cli(storage, "member", "Ana", "--day", "2027-01-03",
+               "--week", "2027-01-01")
+    assert both.returncode == 2
+    assert "not allowed with argument" in both.stderr
+    assert storage.read_bytes() == before

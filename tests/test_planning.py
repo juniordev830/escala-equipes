@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -186,3 +186,33 @@ def test_date_only_queries_reject_datetime_instead_of_silently_misreporting():
 
     assert len(planner.agenda_membro("Ana", BASE.date())) == 1
     assert planner.resumo(BASE.date())["turnos"] == 1
+
+
+def test_member_week_filter_uses_iso_year_and_preserves_snapshot():
+    planner = Escalador()
+    planner.adicionar_membro(Membro("Ana"))
+    for code, start in (
+        ("monday", datetime(2026, 12, 28, 8)),
+        ("sunday", datetime(2027, 1, 3, 8)),
+        ("next-monday", datetime(2027, 1, 4, 8)),
+    ):
+        planner.informar_disponibilidade(
+            Disponibilidade("Ana", start, start + timedelta(hours=2))
+        )
+        planner.alocar(Demanda(code, start, start + timedelta(hours=1)))
+
+    # 2027-01-01 is within the ISO week that starts in 2026.
+    filtered = planner.agenda_membro("ANA", semana=date(2027, 1, 1))
+    assert [a.codigo for a in filtered] == ["monday", "sunday"]
+    assert [a.codigo for a in planner.agenda_membro(
+        "Ana", semana=date(2027, 1, 4)
+    )] == ["next-monday"]
+    assert planner.agenda_membro("Ana", dia=date(2027, 1, 3))[0].codigo == "sunday"
+    assert len(planner.agenda_membro("Ana")) == 3
+    with pytest.raises(ValueError, match="semana inválida"):
+        planner.agenda_membro("Ana", semana=datetime(2027, 1, 1))
+    with pytest.raises(ValueError, match="semana inválida"):
+        planner.agenda_membro("Ana", semana="2027-01-01")
+    with pytest.raises(ValueError, match="não ambos"):
+        planner.agenda_membro("Ana", dia=date(2027, 1, 3), semana=date(2027, 1, 1))
+    assert len(filtered) == 2  # snapshots imutáveis e sem efeitos colaterais
