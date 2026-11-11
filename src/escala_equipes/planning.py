@@ -232,7 +232,7 @@ class Escalador:
         chave = _name(nome, "nome").casefold()
         if chave not in self._membros:
             raise KeyError("pessoa não cadastrada")
-        if dia is not None and not isinstance(dia, date):
+        if dia is not None and (not isinstance(dia, date) or isinstance(dia, datetime)):
             raise ValueError("dia inválido")
         return tuple(sorted(
             (a for a in self._alocacoes
@@ -249,7 +249,7 @@ class Escalador:
         return detectar_conflitos(turnos)
 
     def resumo(self, dia: date) -> dict[str, object]:
-        if not isinstance(dia, date):
+        if not isinstance(dia, date) or isinstance(dia, datetime):
             raise ValueError("dia inválido")
         selecionadas = [
             item for item in self._alocacoes if item.inicio.date() == dia
