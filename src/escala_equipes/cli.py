@@ -45,11 +45,20 @@ def parser() -> argparse.ArgumentParser:
     assignment.add_argument("end", help="AAAA-MM-DDTHH:MM")
     assignment.add_argument("--slots", type=int, default=1)
     assignment.add_argument("--skill", default="")
+    assignment.add_argument("--dry-run", action="store_true",
+                            help="simular seleção sem salvar ou reservar colaboradores")
 
     cancel = actions.add_parser("cancel", help="cancelar toda uma demanda")
     cancel.add_argument("code")
 
     actions.add_parser("list", help="mostrar escala e responsáveis")
+
+    member_schedule = actions.add_parser("member", help="consultar escala de um colaborador")
+    member_schedule.add_argument("name")
+    period = member_schedule.add_mutually_exclusive_group()
+    period.add_argument("--day", default=None, help="filtrar por dia AAAA-MM-DD")
+    period.add_argument("--week", default=None,
+                        help="filtrar pela semana ISO (segunda a domingo) que contém AAAA-MM-DD")
 
     summary = actions.add_parser("summary", help="resumo de turnos do dia")
     summary.add_argument("day", help="AAAA-MM-DD")
@@ -82,12 +91,16 @@ def run(argv: list[str] | None = None) -> int:
             save_schedule(planner, args.file)
             print(f"Disponibilidade registrada: {args.name}")
         elif args.command == "assign":
-            chosen = planner.alocar(Demanda(
+            operation = planner.simular if args.dry_run else planner.alocar
+            chosen = operation(Demanda(
                 args.code, datetime.fromisoformat(args.start),
                 datetime.fromisoformat(args.end),
                 args.slots, args.skill,
             ))
-            save_schedule(planner, args.file)
+            if args.dry_run:
+                print("Simulação: nenhuma alocação foi salva.")
+            else:
+                save_schedule(planner, args.file)
             print(f"Demanda {args.code}: {len(chosen)} pessoa(s) alocada(s)")
             for item in chosen:
                 print(f"  {item.pessoa} | {item.inicio.isoformat()} | {item.fim.isoformat()}")
@@ -103,6 +116,14 @@ def run(argv: list[str] | None = None) -> int:
                     f"{item.codigo} | {item.pessoa} | "
                     f"{item.inicio.isoformat()} até {item.fim.isoformat()}"
                 )
+        elif args.command == "member":
+            selected_day = date.fromisoformat(args.day) if args.day else None
+            selected_week = date.fromisoformat(args.week) if args.week else None
+            allocations = planner.agenda_membro(args.name, selected_day, selected_week)
+            hours = sum((a.fim - a.inicio).total_seconds() / 3600 for a in allocations)
+            print(f"Alocações: {len(allocations)} | horas: {hours:.2f}")
+            for item in allocations:
+                print(f"{item.codigo} | {item.inicio.isoformat()} até {item.fim.isoformat()}")
         elif args.command == "summary":
             report = planner.resumo(date.fromisoformat(args.day))
             for key in ("dia", "pessoas", "turnos", "horas", "conflitos"):

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -151,3 +151,68 @@ def test_available_slots_are_returned_as_immutable_views():
     assert isinstance(planner.disponibilidades, tuple)
     with pytest.raises(AttributeError):
         planner.alocacoes.append("invalid")
+
+
+def test_member_agenda_is_sorted_filtered_immutable_and_tracks_cancellation():
+    planner = planner_with_staff()
+    planner.alocar(Demanda("later", when(2), when(4), habilidade="python"))
+    planner.alocar(Demanda("early", when(0), when(2), habilidade="python"))
+    schedule = planner.agenda_membro("ANA")
+    assert [entry.codigo for entry in schedule] == ["early", "later"]
+    assert len(planner.agenda_membro("Ana", (BASE + timedelta(days=1)).date())) == 0
+    assert isinstance(schedule, tuple)
+    assert planner.agenda_membro("Bruno") == ()
+    with pytest.raises(AttributeError):
+        schedule.append("wrong")
+    with pytest.raises(KeyError):
+        planner.agenda_membro("inexistente")
+    with pytest.raises(ValueError):
+        planner.agenda_membro("Ana", "2026-11-09")
+    planner.cancelar("early")
+    assert [entry.codigo for entry in planner.agenda_membro("ana")] == ["later"]
+    assert len(schedule) == 2  # snapshot anterior não muda
+
+
+def test_date_only_queries_reject_datetime_instead_of_silently_misreporting():
+    planner = planner_with_staff()
+    planner.alocar(Demanda("shift", when(0), when(2), habilidade="python"))
+
+    # datetime inherits from date; accepting it previously returned an empty
+    # member agenda and an incorrect daily summary for an existing shift.
+    with pytest.raises(ValueError, match="dia inválido"):
+        planner.agenda_membro("Ana", BASE)
+    with pytest.raises(ValueError, match="dia inválido"):
+        planner.resumo(BASE)
+
+    assert len(planner.agenda_membro("Ana", BASE.date())) == 1
+    assert planner.resumo(BASE.date())["turnos"] == 1
+
+
+def test_member_week_filter_uses_iso_year_and_preserves_snapshot():
+    planner = Escalador()
+    planner.adicionar_membro(Membro("Ana"))
+    for code, start in (
+        ("monday", datetime(2026, 12, 28, 8)),
+        ("sunday", datetime(2027, 1, 3, 8)),
+        ("next-monday", datetime(2027, 1, 4, 8)),
+    ):
+        planner.informar_disponibilidade(
+            Disponibilidade("Ana", start, start + timedelta(hours=2))
+        )
+        planner.alocar(Demanda(code, start, start + timedelta(hours=1)))
+
+    # 2027-01-01 is within the ISO week that starts in 2026.
+    filtered = planner.agenda_membro("ANA", semana=date(2027, 1, 1))
+    assert [a.codigo for a in filtered] == ["monday", "sunday"]
+    assert [a.codigo for a in planner.agenda_membro(
+        "Ana", semana=date(2027, 1, 4)
+    )] == ["next-monday"]
+    assert planner.agenda_membro("Ana", dia=date(2027, 1, 3))[0].codigo == "sunday"
+    assert len(planner.agenda_membro("Ana")) == 3
+    with pytest.raises(ValueError, match="semana inválida"):
+        planner.agenda_membro("Ana", semana=datetime(2027, 1, 1))
+    with pytest.raises(ValueError, match="semana inválida"):
+        planner.agenda_membro("Ana", semana="2027-01-01")
+    with pytest.raises(ValueError, match="não ambos"):
+        planner.agenda_membro("Ana", dia=date(2027, 1, 3), semana=date(2027, 1, 1))
+    assert len(filtered) == 2  # snapshots imutáveis e sem efeitos colaterais

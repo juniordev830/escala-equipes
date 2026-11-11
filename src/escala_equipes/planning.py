@@ -173,7 +173,8 @@ class Escalador:
             semanais + duracao <= membro.horas_semana
         )
 
-    def alocar(self, demanda: Demanda) -> tuple[Alocacao, ...]:
+    def simular(self, demanda: Demanda) -> tuple[Alocacao, ...]:
+        """Prever a seleção atual, sem reservar pessoas nem alterar a escala."""
         if not isinstance(demanda, Demanda):
             raise ValueError("demanda inválida")
         if any(a.codigo.casefold() == demanda.codigo.casefold() for a in self._alocacoes):
@@ -190,7 +191,11 @@ class Escalador:
             Alocacao(demanda.codigo, m.nome, demanda.inicio, demanda.fim)
             for m in disponiveis[:demanda.vagas]
         )
-        # Atomic: no partial allocations on failure.
+        return selecionadas
+
+    def alocar(self, demanda: Demanda) -> tuple[Alocacao, ...]:
+        selecionadas = self.simular(demanda)
+        # Atomic: no partial allocations on failure; recompute against current state.
         self._alocacoes.extend(selecionadas)
         return selecionadas
 
@@ -227,6 +232,34 @@ class Escalador:
         ]
         return removidas
 
+    def agenda_membro(
+        self, nome: str, dia: date | None = None, semana: date | None = None,
+    ) -> tuple[Alocacao, ...]:
+        """Snapshot da agenda, opcionalmente filtrado por dia ou semana ISO."""
+        chave = _name(nome, "nome").casefold()
+        if chave not in self._membros:
+            raise KeyError("pessoa não cadastrada")
+        if dia is not None and (not isinstance(dia, date) or isinstance(dia, datetime)):
+            raise ValueError("dia inválido")
+        if semana is not None and (not isinstance(semana, date) or isinstance(semana, datetime)):
+            raise ValueError("semana inválida")
+        if dia is not None and semana is not None:
+            raise ValueError("informe dia ou semana, não ambos")
+        # ISO: segunda a domingo; ano da semana pode diferir do ano civil.
+        semana_iso = semana.isocalendar()[:2] if semana is not None else None
+        return tuple(sorted(
+            (
+                a for a in self._alocacoes
+                if a.pessoa.casefold() == chave
+                and (dia is None or a.inicio.date() == dia)
+                and (
+                    semana_iso is None
+                    or a.inicio.date().isocalendar()[:2] == semana_iso
+                )
+            ),
+            key=lambda a: (a.inicio, a.codigo.casefold()),
+        ))
+
     def conflitos(self) -> list[tuple[Turno, Turno]]:
         turnos = [
             Turno(item.pessoa, item.inicio, item.fim)
@@ -235,7 +268,7 @@ class Escalador:
         return detectar_conflitos(turnos)
 
     def resumo(self, dia: date) -> dict[str, object]:
-        if not isinstance(dia, date):
+        if not isinstance(dia, date) or isinstance(dia, datetime):
             raise ValueError("dia inválido")
         selecionadas = [
             item for item in self._alocacoes if item.inicio.date() == dia

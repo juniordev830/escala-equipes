@@ -36,6 +36,9 @@ python -m escala_equipes.cli available Bruno 2026-11-09T08:00 2026-11-09T16:00
 python -m escala_equipes.cli assign suporte-01 2026-11-09T09:00 2026-11-09T11:00 --slots 2 --skill qa
 python -m escala_equipes.cli list
 python -m escala_equipes.cli summary 2026-11-09
+python -m escala_equipes.cli member Ana --day 2026-11-09
+python -m escala_equipes.cli member Ana --week 2026-11-11
+python -m escala_equipes.cli member Ana
 python -m escala_equipes.cli cancel suporte-01
 ```
 
@@ -59,6 +62,8 @@ atribuicoes = escala.alocar(Demanda(
 print(atribuicoes)
 ```
 
+O comando `member NOME [--day AAAA-MM-DD | --week AAAA-MM-DD]` consulta somente as alocações daquele colaborador, ordenadas cronologicamente, com quantidade de turnos e horas. `--week` seleciona a semana ISO (segunda a domingo) que contém a data, inclusive nas viradas de ano; não pode ser combinado com `--day`. Nomes são comparados sem distinção de maiúsculas/minúsculas, e a consulta não altera o JSON local.
+
 ## Segurança e privacidade
 
 Este é um protótipo local de demonstração. O JSON não é criptografado, não há autenticação, autorização, banco multiusuário ou mecanismos para sincronização simultânea. Não armazene dados pessoais de colaboradores em repositórios públicos.
@@ -66,3 +71,13 @@ Este é um protótipo local de demonstração. O JSON não é criptografado, nã
 ## Licença
 
 Ainda não definida.
+
+## Simular uma alocação
+
+Use `assign --dry-run` para conferir a seleção antes de confirmar:
+
+```bash
+python -m escala_equipes.cli assign suporte-02 2026-11-09T13:00 2026-11-09T15:00 --slots 2 --skill qa --dry-run
+```
+
+A simulação aplica as mesmas regras de habilidade, disponibilidade, conflitos e limites de horas. Não grava o JSON, não reserva colaboradores e não consome o código da demanda. Retire `--dry-run` para confirmar; a seleção será recalculada considerando o estado atual. Na API Python, use `Escalador.simular(Demanda(...))` para receber um snapshot imutável.
