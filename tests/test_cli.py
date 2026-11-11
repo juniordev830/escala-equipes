@@ -86,3 +86,22 @@ def test_help_without_command(tmp_path):
     result = cli(tmp_path / "missing.json")
     assert result.returncode == 0
     assert "usage:" in result.stdout
+
+
+def test_cli_member_schedule_by_day_is_read_only(tmp_path):
+    storage = tmp_path / "staff.json"
+    assert cli(storage, "add-member", "Ana", "--skills", "python").returncode == 0
+    assert cli(storage, "available", "Ana", "2026-11-09T08:00", "2026-11-09T16:00").returncode == 0
+    assert cli(storage, "assign", "demanda-1", "2026-11-09T09:00",
+               "2026-11-09T11:00", "--skill", "python").returncode == 0
+    previous = storage.read_bytes()
+    report = cli(storage, "member", "ana", "--day", "2026-11-09")
+    assert report.returncode == 0, report.stderr
+    assert "Alocações: 1 | horas: 2.00" in report.stdout
+    assert "demanda-1" in report.stdout
+    assert storage.read_bytes() == previous
+    empty = cli(storage, "member", "Ana", "--day", "2026-11-10")
+    assert empty.returncode == 0 and "Alocações: 0" in empty.stdout
+    assert cli(storage, "member", "Desconhecido").returncode == 2
+    assert cli(storage, "member", "Ana", "--day", "2026-02-30").returncode == 2
+    assert storage.read_bytes() == previous
