@@ -36,6 +36,8 @@ python -m escala_equipes.cli available Bruno 2026-11-09T08:00 2026-11-09T16:00
 python -m escala_equipes.cli assign suporte-01 2026-11-09T09:00 2026-11-09T11:00 --slots 2 --skill qa
 python -m escala_equipes.cli list
 python -m escala_equipes.cli summary 2026-11-09
+python -m escala_equipes.cli member Ana --day 2026-11-09
+python -m escala_equipes.cli member Ana
 python -m escala_equipes.cli cancel suporte-01
 ```
 
@@ -58,6 +60,8 @@ atribuicoes = escala.alocar(Demanda(
 ))
 print(atribuicoes)
 ```
+
+O comando `member NOME [--day AAAA-MM-DD]` consulta somente as alocações daquele colaborador, ordenadas cronologicamente, com quantidade de turnos e horas. Nomes são comparados sem distinção de maiúsculas/minúsculas, e a consulta não altera o JSON local.
 
 ## Segurança e privacidade
 
