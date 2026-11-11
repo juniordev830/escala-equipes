@@ -173,7 +173,8 @@ class Escalador:
             semanais + duracao <= membro.horas_semana
         )
 
-    def alocar(self, demanda: Demanda) -> tuple[Alocacao, ...]:
+    def simular(self, demanda: Demanda) -> tuple[Alocacao, ...]:
+        """Prever a seleção atual, sem reservar pessoas nem alterar a escala."""
         if not isinstance(demanda, Demanda):
             raise ValueError("demanda inválida")
         if any(a.codigo.casefold() == demanda.codigo.casefold() for a in self._alocacoes):
@@ -190,7 +191,11 @@ class Escalador:
             Alocacao(demanda.codigo, m.nome, demanda.inicio, demanda.fim)
             for m in disponiveis[:demanda.vagas]
         )
-        # Atomic: no partial allocations on failure.
+        return selecionadas
+
+    def alocar(self, demanda: Demanda) -> tuple[Alocacao, ...]:
+        selecionadas = self.simular(demanda)
+        # Atomic: no partial allocations on failure; recompute against current state.
         self._alocacoes.extend(selecionadas)
         return selecionadas
 

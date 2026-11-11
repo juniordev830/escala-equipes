@@ -45,6 +45,8 @@ def parser() -> argparse.ArgumentParser:
     assignment.add_argument("end", help="AAAA-MM-DDTHH:MM")
     assignment.add_argument("--slots", type=int, default=1)
     assignment.add_argument("--skill", default="")
+    assignment.add_argument("--dry-run", action="store_true",
+                            help="simular seleção sem salvar ou reservar colaboradores")
 
     cancel = actions.add_parser("cancel", help="cancelar toda uma demanda")
     cancel.add_argument("code")
@@ -89,12 +91,16 @@ def run(argv: list[str] | None = None) -> int:
             save_schedule(planner, args.file)
             print(f"Disponibilidade registrada: {args.name}")
         elif args.command == "assign":
-            chosen = planner.alocar(Demanda(
+            operation = planner.simular if args.dry_run else planner.alocar
+            chosen = operation(Demanda(
                 args.code, datetime.fromisoformat(args.start),
                 datetime.fromisoformat(args.end),
                 args.slots, args.skill,
             ))
-            save_schedule(planner, args.file)
+            if args.dry_run:
+                print("Simulação: nenhuma alocação foi salva.")
+            else:
+                save_schedule(planner, args.file)
             print(f"Demanda {args.code}: {len(chosen)} pessoa(s) alocada(s)")
             for item in chosen:
                 print(f"  {item.pessoa} | {item.inicio.isoformat()} | {item.fim.isoformat()}")
