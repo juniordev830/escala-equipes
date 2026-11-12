@@ -66,3 +66,7 @@ Este é um protótipo local de demonstração. O JSON não é criptografado, nã
 ## Licença
 
 Ainda não definida.
+
+## Documentação para manutenção
+
+O [guia de validação](docs/GUIA_DE_VALIDACAO.md) contém testes de regressão, pontos críticos e critérios para revisar a próxima alteração.
