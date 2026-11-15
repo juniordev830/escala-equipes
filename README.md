@@ -81,3 +81,7 @@ python -m escala_equipes.cli assign suporte-02 2026-11-09T13:00 2026-11-09T15:00
 ```
 
 A simulação aplica as mesmas regras de habilidade, disponibilidade, conflitos e limites de horas. Não grava o JSON, não reserva colaboradores e não consome o código da demanda. Retire `--dry-run` para confirmar; a seleção será recalculada considerando o estado atual. Na API Python, use `Escalador.simular(Demanda(...))` para receber um snapshot imutável.
+
+## Documentação para manutenção
+
+O [guia de validação](docs/GUIA_DE_VALIDACAO.md) contém testes de regressão, pontos críticos e critérios para revisar a próxima alteração.
