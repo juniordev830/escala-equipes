@@ -117,6 +117,21 @@ def test_cancel_releases_every_allocated_slot():
     assert len(planner.alocar(Demanda("multi", when(0), when(2), vagas=2, habilidade="qa"))) == 2
 
 
+def test_weekly_limit_handles_last_calendar_week_without_overflow():
+    planner = Escalador()
+    planner.adicionar_membro(Membro("Ana", horas_semana=2, horas_dia=2))
+    monday = datetime(9999, 12, 27, 8)
+    friday = datetime(9999, 12, 31, 8)
+    for code, start in (("monday", monday), ("friday", friday)):
+        end = start + timedelta(hours=1)
+        planner.informar_disponibilidade(Disponibilidade("Ana", start, end))
+        assert len(planner.alocar(Demanda(code, start, end))) == 1
+    extra = friday + timedelta(hours=1)
+    planner.informar_disponibilidade(Disponibilidade("Ana", extra, extra + timedelta(hours=1)))
+    with pytest.raises(ValueError, match="não há pessoas"):
+        planner.alocar(Demanda("extra", extra, extra + timedelta(hours=1)))
+
+
 def test_daily_report_and_weekly_assignments():
     planner = planner_with_staff()
     planner.alocar(Demanda("one", when(0), when(2), vagas=2, habilidade="qa"))

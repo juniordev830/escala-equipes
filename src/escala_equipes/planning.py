@@ -133,21 +133,19 @@ class Escalador:
             raise ValueError("disponibilidade sobreposta")
         self._disponibilidades.append(periodo)
 
-    def _horas(self, pessoa: str, dia: date, inicio: datetime) -> tuple[float, float]:
+    def _carga(self, pessoa: str, dia: date) -> tuple[timedelta, timedelta]:
         chave = pessoa.casefold()
-        segunda = dia - timedelta(days=dia.weekday())
-        fim_semana = segunda + timedelta(days=7)
-        diarios = sum(
-            (item.fim - item.inicio).total_seconds() / 3600
-            for item in self._alocacoes
-            if item.pessoa.casefold() == chave and item.inicio.date() == dia
-        )
-        semanais = sum(
-            (item.fim - item.inicio).total_seconds() / 3600
-            for item in self._alocacoes
-            if item.pessoa.casefold() == chave and
-            segunda <= item.inicio.date() < fim_semana
-        )
+        semana = dia.isocalendar()[:2]
+        diarios = semanais = timedelta()
+        for item in self._alocacoes:
+            if item.pessoa.casefold() != chave:
+                continue
+            data = item.inicio.date()
+            duracao = item.fim - item.inicio
+            if data == dia:
+                diarios += duracao
+            if data.isocalendar()[:2] == semana:
+                semanais += duracao
         return diarios, semanais
 
     def _pode_alocar(self, membro: Membro, demanda: Demanda) -> bool:
@@ -166,11 +164,11 @@ class Escalador:
             for a in self._alocacoes
         ):
             return False
-        diarias, semanais = self._horas(membro.nome, demanda.inicio.date(), demanda.inicio)
-        duracao = (demanda.fim - demanda.inicio).total_seconds() / 3600
+        diarias, semanais = self._carga(membro.nome, demanda.inicio.date())
+        duracao = demanda.fim - demanda.inicio
         return (
-            diarias + duracao <= membro.horas_dia and
-            semanais + duracao <= membro.horas_semana
+            diarias + duracao <= timedelta(hours=membro.horas_dia) and
+            semanais + duracao <= timedelta(hours=membro.horas_semana)
         )
 
     def simular(self, demanda: Demanda) -> tuple[Alocacao, ...]:
@@ -182,7 +180,7 @@ class Escalador:
         disponiveis = [m for m in self._membros.values() if self._pode_alocar(m, demanda)]
         # Least weekly hours first, then stable lexical order.
         disponiveis.sort(key=lambda m: (
-            self._horas(m.nome, demanda.inicio.date(), demanda.inicio)[1],
+            self._carga(m.nome, demanda.inicio.date())[1],
             m.nome.casefold(),
         ))
         if len(disponiveis) < demanda.vagas:
