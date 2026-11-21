@@ -23,6 +23,10 @@ class Turno:
 
     def conflita(self, outro: "Turno") -> bool:
         """Uma pessoa não pode estar em dois turnos sobrepostos."""
+        if not isinstance(outro, Turno):
+            raise ValueError("turno comparado inválido")
+        if (self.inicio.tzinfo is None) != (outro.inicio.tzinfo is None):
+            raise ValueError("não compare turnos com padrões de fuso diferentes")
         return (
             self.pessoa.strip().casefold() == outro.pessoa.strip().casefold()
             and self.inicio < outro.fim
