@@ -31,3 +31,26 @@ def test_rejects_invalid_shift():
         Turno("", start, start + timedelta(hours=1))
     with pytest.raises(ValueError):
         Turno("Ana", start, start)
+
+def test_shift_rejects_bad_people_and_datetime_types():
+    start = datetime(2026, 11, 21, 8)
+    for value in (None, 123, " ", "A" * 81, "Pessoa\nInvalida"):
+        with pytest.raises(ValueError):
+            Turno(value, start, start + timedelta(hours=1))
+    for initial, ending in (("08:00", start), (start, "09:00")):
+        with pytest.raises(ValueError):
+            Turno("Ana", initial, ending)
+
+
+def test_shift_rejects_mixed_timezone_awareness():
+    from datetime import timezone
+    start = datetime(2026, 11, 21, 8)
+    with pytest.raises(ValueError, match="fuso"):
+        Turno("Ana", start, (start + timedelta(hours=1)).replace(tzinfo=timezone.utc))
+
+
+def test_detect_conflicts_rejects_non_shift_members():
+    with pytest.raises(ValueError, match="Turno"):
+        detectar_conflitos([None])
+    with pytest.raises(ValueError, match="Turno"):
+        detectar_conflitos(None)
