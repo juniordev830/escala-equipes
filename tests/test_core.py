@@ -54,3 +54,22 @@ def test_detect_conflicts_rejects_non_shift_members():
         detectar_conflitos([None])
     with pytest.raises(ValueError, match="Turno"):
         detectar_conflitos(None)
+
+
+def test_conflict_check_rejects_mixed_timezone_awareness_between_shifts():
+    from datetime import timezone
+    start = datetime(2026, 11, 21, 8)
+    naive = Turno("Ana", start, start + timedelta(hours=1))
+    aware = Turno("Ana", start.replace(tzinfo=timezone.utc),
+                  (start + timedelta(hours=1)).replace(tzinfo=timezone.utc))
+    with pytest.raises(ValueError, match="fuso"):
+        naive.conflita(aware)
+    with pytest.raises(ValueError, match="fuso"):
+        detectar_conflitos([naive, aware])
+
+
+def test_legacy_conflict_requires_another_shift_record():
+    start = datetime(2026, 11, 21, 8)
+    shift = Turno("Ana", start, start + timedelta(hours=1))
+    with pytest.raises(ValueError, match="inválido"):
+        shift.conflita(None)
