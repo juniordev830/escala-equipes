@@ -85,3 +85,4 @@ A simulação aplica as mesmas regras de habilidade, disponibilidade, conflitos 
 ## Documentação para manutenção
 
 O [guia de validação](docs/GUIA_DE_VALIDACAO.md) contém testes de regressão, pontos críticos e critérios para revisar a próxima alteração.
+\nA API antiga `Turno` também valida nomes, tipos de datas e consistência de fuso horário entre início e fim; a detecção de conflitos rejeita coleções contendo objetos que não sejam turnos.\n
