@@ -15,7 +15,9 @@ from .core import Turno, detectar_conflitos
 def _name(value: str, label: str) -> str:
     if not isinstance(value, str) or not value.strip() or len(value.strip()) > 80:
         raise ValueError(f"{label} deve conter 1 a 80 caracteres")
-    if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+    if any(ord(ch) < 32 or ord(ch) == 127 or
+           0x202A <= ord(ch) <= 0x202E or
+           0x2066 <= ord(ch) <= 0x2069 for ch in value):
         raise ValueError(f"{label} contém caracteres de controle")
     return value.strip()
 
