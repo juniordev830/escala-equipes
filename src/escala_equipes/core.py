@@ -35,8 +35,10 @@ class Turno:
 
 
 def detectar_conflitos(turnos: list[Turno]) -> list[tuple[Turno, Turno]]:
-    if not isinstance(turnos, list) or any(not isinstance(turno, Turno) for turno in turnos):
-        raise ValueError("turnos deve ser uma lista de Turno")
+    if not isinstance(turnos, list) or len(turnos) > 2000 or any(
+        not isinstance(turno, Turno) for turno in turnos
+    ):
+        raise ValueError("turnos deve ser uma lista de até 2000 objetos Turno")
     return [
         (turno, outro)
         for index, turno in enumerate(turnos)
