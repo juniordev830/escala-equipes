@@ -12,7 +12,9 @@ class Turno:
     def __post_init__(self) -> None:
         if not isinstance(self.pessoa, str) or not 1 <= len(self.pessoa.strip()) <= 80:
             raise ValueError("pessoa deve conter de 1 a 80 caracteres")
-        if any(ord(char) < 32 for char in self.pessoa):
+        if any(ord(char) < 32 or ord(char) == 127 or
+               0x202A <= ord(char) <= 0x202E or
+               0x2066 <= ord(char) <= 0x2069 for char in self.pessoa):
             raise ValueError("pessoa contém caracteres de controle")
         if not isinstance(self.inicio, datetime) or not isinstance(self.fim, datetime):
             raise ValueError("início e fim devem ser datas e horas")
@@ -35,8 +37,10 @@ class Turno:
 
 
 def detectar_conflitos(turnos: list[Turno]) -> list[tuple[Turno, Turno]]:
-    if not isinstance(turnos, list) or any(not isinstance(turno, Turno) for turno in turnos):
-        raise ValueError("turnos deve ser uma lista de Turno")
+    if not isinstance(turnos, list) or len(turnos) > 2000 or any(
+        not isinstance(turno, Turno) for turno in turnos
+    ):
+        raise ValueError("turnos deve ser uma lista de até 2000 objetos Turno")
     return [
         (turno, outro)
         for index, turno in enumerate(turnos)
