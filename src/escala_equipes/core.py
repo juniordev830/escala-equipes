@@ -12,7 +12,9 @@ class Turno:
     def __post_init__(self) -> None:
         if not isinstance(self.pessoa, str) or not 1 <= len(self.pessoa.strip()) <= 80:
             raise ValueError("pessoa deve conter de 1 a 80 caracteres")
-        if any(ord(char) < 32 or ord(char) == 127 for char in self.pessoa):
+        if any(ord(char) < 32 or ord(char) == 127 or
+               0x202A <= ord(char) <= 0x202E or
+               0x2066 <= ord(char) <= 0x2069 for char in self.pessoa):
             raise ValueError("pessoa contém caracteres de controle")
         if not isinstance(self.inicio, datetime) or not isinstance(self.fim, datetime):
             raise ValueError("início e fim devem ser datas e horas")
